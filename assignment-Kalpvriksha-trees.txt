@@ -1,0 +1,206 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_SIZE 50
+
+typedef struct Node {
+    char name[MAX_SIZE];
+    struct Node* child;
+    struct Node* sib;
+} Node;
+
+typedef struct CorporationInfo {
+    char city[MAX_SIZE];
+    char suburb[MAX_SIZE];
+    char town[MAX_SIZE];
+    char corporation[MAX_SIZE];
+} CorporationInfo;
+
+Node* createNode(const char* name) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    strcpy(newNode->name, name);
+    newNode->child = NULL;
+    newNode->sib = NULL;
+    return newNode;
+}
+
+void insertValue(Node** root, const char* cityName, const char* suburbName, const char* townName, const char* corporationName) {
+    // Create or find city node
+    Node* cityNode = NULL;
+    if (*root == NULL) {
+        *root = createNode(cityName);
+        cityNode = *root;
+    } else {
+        cityNode = *root;
+        while (cityNode != NULL && strcmp(cityNode->name, cityName) != 0) {
+            cityNode = cityNode->sib;
+        }
+        if (cityNode == NULL) {
+            // City not found, create a new city node
+            cityNode = createNode(cityName);
+            cityNode->sib = (*root)->child;
+            (*root)->child = cityNode;
+        }
+    }
+
+    // Create or find suburb node
+    Node* suburbNode = NULL;
+    if (cityNode->child == NULL) {
+        cityNode->child = createNode(suburbName);
+        suburbNode = cityNode->child;
+    } else {
+        suburbNode = cityNode->child;
+        while (suburbNode != NULL && strcmp(suburbNode->name, suburbName) != 0) {
+            suburbNode = suburbNode->sib;
+        }
+        if (suburbNode == NULL) {
+            // Suburb not found, create a new suburb node
+            suburbNode = createNode(suburbName);
+            suburbNode->sib = cityNode->child;
+            cityNode->child = suburbNode;
+        }
+    }
+
+    // Create or find town node
+    Node* townNode = NULL;
+    if (suburbNode->child == NULL) {
+        suburbNode->child = createNode(townName);
+        townNode = suburbNode->child;
+    } else {
+        townNode = suburbNode->child;
+        while (townNode != NULL && strcmp(townNode->name, townName) != 0) {
+            townNode = townNode->sib;
+        }
+        if (townNode == NULL) {
+            // Town not found, create a new town node
+            townNode = createNode(townName);
+            townNode->sib = suburbNode->child;
+            suburbNode->child = townNode;
+        }
+    }
+
+    // Create corporation node
+    Node* corporationNode = createNode(corporationName);
+    corporationNode->sib = townNode->child;
+    townNode->child = corporationNode;
+}
+
+void freeTree(Node* root) {
+    if (root == NULL) {
+        return;
+    }
+
+    Node* child = root->child;
+    while (child != NULL) {
+        Node* nextSib = child->sib;
+        freeTree(child);
+        child = nextSib;
+    }
+
+    free(root);
+}
+
+void printTree(Node* root, int level) {
+    if (root == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < level; i++) {
+        printf("\t");
+    }
+    printf("%s\n", root->name);
+
+    Node* child = root->child;
+    while (child != NULL) {
+        printTree(child, level + 1);
+        child = child->sib;
+    }
+}
+
+int findCorporationInfo(Node* root, const char* corporationName, CorporationInfo* info) {
+    if (root == NULL) {
+        return 0;
+    }
+
+    Node* cityNode = root;
+    while (cityNode != NULL) {
+        Node* suburbNode = cityNode->child;
+        while (suburbNode != NULL) {
+            Node* townNode = suburbNode->child;
+            while (townNode != NULL) {
+                Node* corporationNode = townNode->child;
+                while (corporationNode != NULL) {
+                    if (strcmp(corporationNode->name, corporationName) == 0) {
+                        strcpy(info->city, cityNode->name);
+                        strcpy(info->suburb, suburbNode->name);
+                        strcpy(info->town, townNode->name);
+                        strcpy(info->corporation, corporationName);
+                        return 1;  // Found the corporation
+                    }
+                    corporationNode = corporationNode->sib;
+                }
+                townNode = townNode->sib;
+            }
+            suburbNode = suburbNode->sib;
+        }
+        cityNode = cityNode->sib;
+    }
+
+    return 0;  // Corporation not found
+}
+
+void getCommonInfo(CorporationInfo info1, CorporationInfo info2, int foundCorporation1, int foundCorporation2){
+    if (foundCorporation1 == foundCorporation2) {
+        if(strcmp(info1.city,info2.city)==0){
+            printf("City: %s\n", info1.city);
+        }
+        if(strcmp(info1.suburb,info2.suburb)==0){
+            printf("Suburb: %s\n", info1.suburb);
+        }
+        if(strcmp(info1.town,info2.town)==0){
+            printf("Town: %s\n", info1.town);
+        }
+    } else {
+        if(foundCorporation1)
+        printf("%s %s",info2.corporation,"is Corporation not found.\n");
+        if(foundCorporation2)
+        printf("%s %s",info1.corporation,"is Corporation not found.\n");
+
+    }
+}
+
+int main() {
+    Node* root = NULL;
+
+    insertValue(&root, "Bangalore", "Bangalore East", "A", "56001");
+    insertValue(&root, "Bangalore", "Bangalore East", "A", "56002");
+    insertValue(&root, "Bangalore", "Bangalore East", "B", "56003");
+    insertValue(&root, "Bangalore", "Bangalore East", "B", "56004");
+    insertValue(&root, "Bangalore", "Bangalore West", "C", "56005");
+    insertValue(&root, "Bangalore", "Bangalore West", "C", "56006");
+    insertValue(&root, "Bangalore", "Bangalore West", "D", "56007");
+    insertValue(&root, "Bangalore", "Bangalore West", "D", "56008");
+
+    printTree(root, 0);
+
+    CorporationInfo info1;
+    CorporationInfo info2;
+
+    char corporation1[20];
+    char corporation2[20];
+    printf("Enter Corporation 1\n");
+    scanf("%s",corporation1);
+
+    printf("Enter Corporation 2\n");
+    scanf("%s",corporation2);
+    
+    int foundcorporation1 = findCorporationInfo(root, corporation1, &info1);
+    int foundcorporation2 = findCorporationInfo(root, corporation2, &info2);
+
+    getCommonInfo(info1,info2,foundcorporation1,foundcorporation2);
+
+    freeTree(root);
+
+    return 0;
+}
